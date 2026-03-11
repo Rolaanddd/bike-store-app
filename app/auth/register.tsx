@@ -1,3 +1,4 @@
+// app/auth/register.tsx  ── updated to use real backend
 import {
   View,
   Text,
@@ -7,6 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   StatusBar,
+  Alert,
 } from "react-native";
 import { useState } from "react";
 import { useRouter } from "expo-router";
@@ -19,10 +21,10 @@ import {
   EyeOff,
   ArrowLeft,
 } from "lucide-react-native";
+import { register } from "../../services/api"; // ← your API service
 
 export default function RegisterScreen() {
   const router = useRouter();
-
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [city, setCity] = useState("");
@@ -30,20 +32,45 @@ export default function RegisterScreen() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [agreed, setAgreed] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     if (!agreed) {
-      alert("Please agree to the Terms of Service and Privacy Policy.");
+      Alert.alert(
+        "Terms Required",
+        "Please agree to the Terms of Service and Privacy Policy.",
+      );
       return;
     }
-    // TODO: add your registration logic here
-    console.log("Register:", { fullName, email, city, age, password });
+    if (!fullName || !email || !password) {
+      Alert.alert(
+        "Missing Fields",
+        "Please fill in your name, email and password.",
+      );
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await register({
+        full_name: fullName.trim(),
+        email: email.trim(),
+        city: city.trim() || undefined,
+        age: age ? parseInt(age, 10) : undefined,
+        password,
+      });
+      // On success the JWT is stored; go straight to the app
+      router.replace("/(tabs)/home");
+    } catch (err: any) {
+      Alert.alert("Registration Failed", err.message || "Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <View style={{ flex: 1, backgroundColor: "#1a0f00" }}>
       <StatusBar barStyle="light-content" backgroundColor="#1a0f00" />
-
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -53,7 +80,7 @@ export default function RegisterScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* ── Back Button ── */}
+          {/* Back */}
           <View style={{ paddingTop: 56, paddingHorizontal: 20 }}>
             <TouchableOpacity
               onPress={() => router.back()}
@@ -68,7 +95,7 @@ export default function RegisterScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* ── Title ── */}
+          {/* Title */}
           <View
             style={{ paddingHorizontal: 20, marginTop: 12, marginBottom: 28 }}
           >
@@ -87,7 +114,7 @@ export default function RegisterScreen() {
             </Text>
           </View>
 
-          {/* ── Form ── */}
+          {/* Form */}
           <View style={{ paddingHorizontal: 20, gap: 16 }}>
             {/* Full Name */}
             <View>
@@ -104,7 +131,7 @@ export default function RegisterScreen() {
               </View>
             </View>
 
-            {/* Email Address */}
+            {/* Email */}
             <View>
               <Text style={labelStyle}>Email Address</Text>
               <View style={[inputContainer, { marginTop: 8 }]}>
@@ -121,9 +148,8 @@ export default function RegisterScreen() {
               </View>
             </View>
 
-            {/* City + Age (side by side) */}
+            {/* City + Age */}
             <View style={{ flexDirection: "row", gap: 12 }}>
-              {/* City */}
               <View style={{ flex: 1 }}>
                 <Text style={labelStyle}>City</Text>
                 <View style={[inputContainer, { marginTop: 8 }]}>
@@ -137,12 +163,10 @@ export default function RegisterScreen() {
                     onChangeText={setCity}
                     placeholder="Los Angeles"
                     placeholderTextColor="#5a4030"
-                    style={[inputStyle]}
+                    style={inputStyle}
                   />
                 </View>
               </View>
-
-              {/* Age */}
               <View style={{ width: 85 }}>
                 <Text style={labelStyle}>Age</Text>
                 <View
@@ -193,7 +217,7 @@ export default function RegisterScreen() {
               </View>
             </View>
 
-            {/* Terms Checkbox */}
+            {/* Terms */}
             <TouchableOpacity
               onPress={() => setAgreed(!agreed)}
               activeOpacity={0.7}
@@ -245,12 +269,13 @@ export default function RegisterScreen() {
               </Text>
             </TouchableOpacity>
 
-            {/* Create Account Button */}
+            {/* Submit */}
             <TouchableOpacity
               onPress={handleRegister}
               activeOpacity={0.85}
+              disabled={loading}
               style={{
-                backgroundColor: "#e87c00",
+                backgroundColor: loading ? "#a05500" : "#e87c00",
                 borderRadius: 14,
                 height: 54,
                 alignItems: "center",
@@ -271,12 +296,12 @@ export default function RegisterScreen() {
                   letterSpacing: 0.5,
                 }}
               >
-                Create Account
+                {loading ? "CREATING ACCOUNT..." : "Create Account"}
               </Text>
             </TouchableOpacity>
           </View>
 
-          {/* ── Footer ── */}
+          {/* Footer */}
           <View
             style={{
               flexDirection: "row",
@@ -304,13 +329,11 @@ export default function RegisterScreen() {
   );
 }
 
-// ── Shared styles ──────────────────────────────────────────────
 const labelStyle = {
   color: "#ccc" as const,
   fontSize: 13,
   fontWeight: "600" as const,
 };
-
 const inputContainer = {
   flexDirection: "row" as const,
   alignItems: "center" as const,
@@ -321,9 +344,4 @@ const inputContainer = {
   paddingHorizontal: 14,
   height: 52,
 };
-
-const inputStyle = {
-  flex: 1,
-  color: "#fff" as const,
-  fontSize: 15,
-};
+const inputStyle = { flex: 1, color: "#fff" as const, fontSize: 15 };

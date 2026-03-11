@@ -1,3 +1,4 @@
+// app/login.tsx  ── updated to use real backend
 import {
   View,
   Text,
@@ -13,21 +14,29 @@ import {
 import { useState } from "react";
 import { useRouter } from "expo-router";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { login } from "../services/api"; // ← your API service
 
 export default function LoginScreen() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
-    if (email === "roland@gmail.com" && password === "1234") {
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert("Error", "Please enter your email and password.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await login(email.trim(), password); // saves JWT to SecureStore
       router.replace("/(tabs)/home");
-    } else {
-      Alert.alert(
-        "Login Failed",
-        "Invalid email or password. Please try again.",
-      );
+    } catch (err: any) {
+      Alert.alert("Login Failed", err.message || "Invalid email or password.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -94,7 +103,7 @@ export default function LoginScreen() {
           >
             <Image
               source={{
-                uri: "https://images.unsplash.com/photo-1614888441179-9e21cfd014d9?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+                uri: "https://images.unsplash.com/photo-1614888441179-9e21cfd014d9?q=80&w=1170&auto=format&fit=crop",
               }}
               style={{ width: "100%", height: "100%", resizeMode: "cover" }}
             />
@@ -220,8 +229,9 @@ export default function LoginScreen() {
             <TouchableOpacity
               onPress={handleLogin}
               activeOpacity={0.85}
+              disabled={loading}
               style={{
-                backgroundColor: "#e87c00",
+                backgroundColor: loading ? "#a05500" : "#e87c00",
                 borderRadius: 14,
                 height: 54,
                 alignItems: "center",
@@ -242,7 +252,7 @@ export default function LoginScreen() {
                   letterSpacing: 1.5,
                 }}
               >
-                LOGIN
+                {loading ? "SIGNING IN..." : "LOGIN"}
               </Text>
             </TouchableOpacity>
           </View>
