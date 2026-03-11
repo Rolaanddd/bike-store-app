@@ -1,33 +1,107 @@
-import { Tabs } from 'expo-router';
-import React from 'react';
+import { Tabs } from "expo-router";
+import { View, Text } from "react-native";
+import { Ionicons, FontAwesome5 } from "@expo/vector-icons";
 
-import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+type TabIconProps = {
+  label: string;
+  focused: boolean;
+  icon: React.ReactNode;
+};
 
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
+function TabIcon({ label, focused, icon }: TabIconProps) {
+  return (
+    <View
+      style={{
+        alignItems: "center",
+        justifyContent: "flex-start",
+        paddingTop: 15,
+      }}
+    >
+      {icon}
+      <Text
+        style={{
+          fontSize: 9,
+          width: 39,
+          textAlign: "center",
+          fontWeight: focused ? "700" : "500",
+          color: focused ? "#e87c00" : "#6b5040",
+          marginTop: 3,
+          letterSpacing: 0.5,
+        }}
+      >
+        {label.toUpperCase()}
+      </Text>
+    </View>
+  );
+}
 
+export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
         headerShown: false,
-        tabBarButton: HapticTab,
-      }}>
+        tabBarStyle: {
+          backgroundColor: "#1a0f00",
+          borderTopColor: "#3d2200",
+          borderTopWidth: 1,
+          height: 70,
+          paddingBottom: 8,
+        },
+        tabBarShowLabel: false,
+      }}
+    >
       <Tabs.Screen
-        name="index"
+        name="home"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          tabBarIcon: ({ focused }) => (
+            <TabIcon
+              label="Home"
+              focused={focused}
+              icon={
+                <Ionicons
+                  name={focused ? "home" : "home-outline"}
+                  size={22}
+                  color={focused ? "#e87c00" : "#6b5040"}
+                />
+              }
+            />
+          ),
         }}
       />
       <Tabs.Screen
-        name="explore"
+        name="cart"
         options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+          tabBarIcon: ({ focused }) => (
+            <TabIcon
+              label="Cart"
+              focused={focused}
+              icon={
+                <Ionicons
+                  name={focused ? "cart" : "cart-outline"}
+                  size={22}
+                  color={focused ? "#e87c00" : "#6b5040"}
+                />
+              }
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          tabBarIcon: ({ focused }) => (
+            <TabIcon
+              label="Profile"
+              focused={focused}
+              icon={
+                <Ionicons
+                  name={focused ? "person" : "person-outline"}
+                  size={22}
+                  color={focused ? "#e87c00" : "#6b5040"}
+                />
+              }
+            />
+          ),
         }}
       />
     </Tabs>
