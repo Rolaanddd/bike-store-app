@@ -9,7 +9,7 @@
 
 import * as SecureStore from "expo-secure-store";
 
-const BASE_URL = "http://10.244.199.82:3000/api"; // Android emulator → localhost
+const BASE_URL = "http://10.82.250.82:3000/api"; // Android emulator → localhost
 // const BASE_URL = "http://localhost:3000/api"; // iOS simulator
 // const BASE_URL = "http://YOUR_LOCAL_IP:3000/api"; // Physical device
 

@@ -142,8 +142,8 @@ export default function ProfileScreen() {
   const zipLine = user?.address_zip ? ` ${user.address_zip}` : "";
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#1a0f00" }}>
-      <StatusBar barStyle="light-content" backgroundColor="#1a0f00" />
+    <View style={{ flex: 1, backgroundColor: "#111008" }}>
+      <StatusBar barStyle="light-content" backgroundColor="#000000" />
 
       {/* ── EDIT PROFILE MODAL ── */}
       <Modal

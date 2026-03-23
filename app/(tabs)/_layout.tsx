@@ -1,6 +1,6 @@
 import { Tabs } from "expo-router";
 import { View, Text } from "react-native";
-import { Ionicons, FontAwesome5 } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 
 type TabIconProps = {
   label: string;
@@ -11,17 +11,14 @@ type TabIconProps = {
 function TabIcon({ label, focused, icon }: TabIconProps) {
   return (
     <View
-      style={{
-        alignItems: "center",
-        justifyContent: "flex-start",
-        paddingTop: 15,
-      }}
+      style={{ alignItems: "center", justifyContent: "center", paddingTop: 15 }}
     >
       {icon}
       <Text
         style={{
           fontSize: 9,
-          width: 39,
+          width: 40,
+          height: 16,
           textAlign: "center",
           fontWeight: focused ? "700" : "500",
           color: focused ? "#e87c00" : "#6b5040",
@@ -41,11 +38,11 @@ export default function TabsLayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: "#1a0f00",
+          backgroundColor: "#111008",
           borderTopColor: "#3d2200",
           borderTopWidth: 1,
           height: 70,
-          paddingBottom: 8,
+          paddingBottom: 0,
         },
         tabBarShowLabel: false,
       }}
@@ -104,6 +101,11 @@ export default function TabsLayout() {
           ),
         }}
       />
+      {/* Hidden screens — no tab bar icon */}
+      <Tabs.Screen name="all-bikes" options={{ href: null }} />
+      <Tabs.Screen name="bike/[id]" options={{ href: null }} />
+      <Tabs.Screen name="payment" options={{ href: null }} />
+      <Tabs.Screen name="data/store" options={{ href: null }} />
     </Tabs>
   );
 }
