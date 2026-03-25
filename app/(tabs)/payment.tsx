@@ -1,42 +1,66 @@
 import {
   View,
   Text,
-  TouchableOpacity,
-  StatusBar,
   ScrollView,
-  Alert,
+  TouchableOpacity,
   Image,
+  StatusBar,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
+import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
-import {
-  Ionicons,
-  MaterialCommunityIcons,
-  FontAwesome5,
-} from "@expo/vector-icons";
-
-const TOTAL_AMOUNT = "₹44,549.00";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { fetchCart, placeOrder, formatPrice } from "../../services/api";
 
 export default function PaymentScreen() {
   const router = useRouter();
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [confirming, setConfirming] = useState(false);
 
-  const handleConfirm = () => {
-    Alert.alert(
-      "Payment Successful! 🎉",
-      "Your order has been confirmed. Expected delivery in 4-6 weeks.",
-      [
-        {
-          text: "Back to Home",
-          onPress: () => router.replace("/(tabs)/home"),
-        },
-      ],
-    );
+  useEffect(() => {
+    loadTotal();
+  }, []);
+
+  const loadTotal = async () => {
+    try {
+      const data = await fetchCart();
+      const SHIPPING = 250;
+      setTotal(data.subtotal + (data.count > 0 ? SHIPPING : 0));
+    } catch (err) {
+      console.error("Failed to load cart total:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleConfirm = async () => {
+    setConfirming(true);
+    try {
+      await placeOrder("upi");
+      Alert.alert(
+        "Payment Successful! 🎉",
+        "Your order has been confirmed. Expected delivery in 4-6 weeks.",
+        [
+          {
+            text: "Back to Home",
+            onPress: () => router.replace("/(tabs)/home"),
+          },
+        ],
+      );
+    } catch (err: any) {
+      Alert.alert("Error", err.message || "Could not place order.");
+    } finally {
+      setConfirming(false);
+    }
   };
 
   return (
     <View style={{ flex: 1, backgroundColor: "#111008" }}>
       <StatusBar barStyle="light-content" backgroundColor="#111008" />
 
-      {/* ── Top Bar ── */}
+      {/* Top Bar */}
       <View
         style={{
           flexDirection: "row",
@@ -72,27 +96,14 @@ export default function PaymentScreen() {
         >
           Payment
         </Text>
-        <TouchableOpacity
-          style={{
-            width: 38,
-            height: 38,
-            borderRadius: 19,
-            backgroundColor: "#1e1200",
-            alignItems: "center",
-            justifyContent: "center",
-            borderWidth: 1,
-            borderColor: "#2e1a00",
-          }}
-        >
-          <Ionicons name="help-circle-outline" size={20} color="#fff" />
-        </TouchableOpacity>
+        <View style={{ width: 38 }} />
       </View>
 
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}
       >
-        {/* ── Total Amount Card ── */}
+        {/* Total Amount Card */}
         <View
           style={{
             backgroundColor: "#1e1200",
@@ -118,16 +129,20 @@ export default function PaymentScreen() {
             >
               TOTAL AMOUNT
             </Text>
-            <Text
-              style={{
-                color: "#fff",
-                fontSize: 26,
-                fontWeight: "900",
-                marginTop: 4,
-              }}
-            >
-              {TOTAL_AMOUNT}
-            </Text>
+            {loading ? (
+              <ActivityIndicator color="#e87c00" style={{ marginTop: 8 }} />
+            ) : (
+              <Text
+                style={{
+                  color: "#fff",
+                  fontSize: 26,
+                  fontWeight: "900",
+                  marginTop: 4,
+                }}
+              >
+                {formatPrice(total)}
+              </Text>
+            )}
           </View>
           <View
             style={{
@@ -143,7 +158,7 @@ export default function PaymentScreen() {
           </View>
         </View>
 
-        {/* ── QR Scanner Box ── */}
+        {/* QR Scanner Box */}
         <View
           style={{
             backgroundColor: "#2a2a2a",
@@ -153,7 +168,6 @@ export default function PaymentScreen() {
             marginBottom: 24,
           }}
         >
-          {/* Scanner frame with orange corners */}
           <View
             style={{
               width: 240,
@@ -164,102 +178,42 @@ export default function PaymentScreen() {
             }}
           >
             {/* Corner brackets */}
-            {/* Top-left */}
-            <View style={{ position: "absolute", top: 0, left: 0 }}>
+            {[
+              { top: 0, left: 0 },
+              { top: 0, right: 0 },
+              { bottom: 0, left: 0 },
+              { bottom: 0, right: 0 },
+            ].map((pos, i) => (
               <View
-                style={{
-                  width: 32,
-                  height: 4,
-                  backgroundColor: "#e87c00",
-                  borderRadius: 2,
-                }}
-              />
-              <View
-                style={{
-                  width: 4,
-                  height: 32,
-                  backgroundColor: "#e87c00",
-                  borderRadius: 2,
-                  marginTop: -4,
-                }}
-              />
-            </View>
-            {/* Top-right */}
-            <View
-              style={{
-                position: "absolute",
-                top: 0,
-                right: 0,
-                alignItems: "flex-end",
-              }}
-            >
-              <View
-                style={{
-                  width: 32,
-                  height: 4,
-                  backgroundColor: "#e87c00",
-                  borderRadius: 2,
-                }}
-              />
-              <View
-                style={{
-                  width: 4,
-                  height: 32,
-                  backgroundColor: "#e87c00",
-                  borderRadius: 2,
-                  marginTop: -4,
-                }}
-              />
-            </View>
-            {/* Bottom-left */}
-            <View style={{ position: "absolute", bottom: 0, left: 0 }}>
-              <View
-                style={{
-                  width: 4,
-                  height: 32,
-                  backgroundColor: "#e87c00",
-                  borderRadius: 2,
-                }}
-              />
-              <View
-                style={{
-                  width: 32,
-                  height: 4,
-                  backgroundColor: "#e87c00",
-                  borderRadius: 2,
-                  marginTop: -4,
-                }}
-              />
-            </View>
-            {/* Bottom-right */}
-            <View
-              style={{
-                position: "absolute",
-                bottom: 0,
-                right: 0,
-                alignItems: "flex-end",
-              }}
-            >
-              <View
-                style={{
-                  width: 4,
-                  height: 32,
-                  backgroundColor: "#e87c00",
-                  borderRadius: 2,
-                }}
-              />
-              <View
-                style={{
-                  width: 32,
-                  height: 4,
-                  backgroundColor: "#e87c00",
-                  borderRadius: 2,
-                  marginTop: -4,
-                }}
-              />
-            </View>
-
-            {/* Dashed border overlay */}
+                key={i}
+                style={[
+                  { position: "absolute" },
+                  pos,
+                  {
+                    alignItems:
+                      pos.right !== undefined ? "flex-end" : "flex-start",
+                  },
+                ]}
+              >
+                <View
+                  style={{
+                    width: 32,
+                    height: 4,
+                    backgroundColor: "#e87c00",
+                    borderRadius: 2,
+                  }}
+                />
+                <View
+                  style={{
+                    width: 4,
+                    height: 32,
+                    backgroundColor: "#e87c00",
+                    borderRadius: 2,
+                    marginTop: -4,
+                  }}
+                />
+              </View>
+            ))}
             <View
               style={{
                 position: "absolute",
@@ -273,8 +227,6 @@ export default function PaymentScreen() {
                 borderRadius: 4,
               }}
             />
-
-            {/* QR Code image */}
             <View
               style={{
                 width: 170,
@@ -286,23 +238,18 @@ export default function PaymentScreen() {
                 justifyContent: "center",
               }}
             >
-              {/* Simulated QR Code using pattern */}
-              <View
-                style={{ width: 150, height: 150, backgroundColor: "#f9e8e0" }}
-              >
-                <Image
-                  source={{
-                    uri: "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=motodrive-payment-44549&color=1a0f00&bgcolor=f9e8e0",
-                  }}
-                  style={{ width: 150, height: 150 }}
-                  resizeMode="contain"
-                />
-              </View>
+              <Image
+                source={{
+                  uri: `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=motodrive-payment-${total}&color=1a0f00&bgcolor=f9e8e0`,
+                }}
+                style={{ width: 150, height: 150 }}
+                resizeMode="contain"
+              />
             </View>
           </View>
         </View>
 
-        {/* ── UPI Text ── */}
+        {/* UPI Text */}
         <View style={{ alignItems: "center", marginBottom: 24 }}>
           <Text
             style={{
@@ -326,7 +273,7 @@ export default function PaymentScreen() {
           </Text>
         </View>
 
-        {/* ── Verified Merchant Banner ── */}
+        {/* Verified Merchant */}
         <View
           style={{
             backgroundColor: "#1e1200",
@@ -369,12 +316,13 @@ export default function PaymentScreen() {
           </View>
         </View>
 
-        {/* ── Confirm Payment Button ── */}
+        {/* Confirm Button */}
         <TouchableOpacity
           onPress={handleConfirm}
+          disabled={confirming || loading}
           activeOpacity={0.85}
           style={{
-            backgroundColor: "#e87c00",
+            backgroundColor: confirming ? "#a05500" : "#e87c00",
             borderRadius: 50,
             height: 56,
             flexDirection: "row",
@@ -396,12 +344,14 @@ export default function PaymentScreen() {
               letterSpacing: 0.5,
             }}
           >
-            Confirm Payment
+            {confirming ? "Placing Order..." : "Confirm Payment"}
           </Text>
-          <Ionicons name="chevron-forward" size={18} color="#fff" />
+          {!confirming && (
+            <Ionicons name="chevron-forward" size={18} color="#fff" />
+          )}
         </TouchableOpacity>
 
-        {/* ── Payment method icons ── */}
+        {/* Payment icons */}
         <View
           style={{
             flexDirection: "row",

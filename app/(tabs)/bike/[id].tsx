@@ -6,17 +6,38 @@ import {
   Image,
   StatusBar,
   Alert,
-  Dimensions,
+  ActivityIndicator,
 } from "react-native";
+import { useEffect, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
   Ionicons,
   MaterialCommunityIcons,
   FontAwesome5,
 } from "@expo/vector-icons";
-import { BIKES, ENGINEERING_HIGHLIGHTS, formatPrice } from "../data/store";
+import {
+  fetchBikeById,
+  addToCart,
+  formatPrice,
+  type Bike,
+} from "../../../services/api";
 
-const { width } = Dimensions.get("window");
+const ENGINEERING_HIGHLIGHTS = [
+  {
+    id: "eh1",
+    title: "Titanium Exhaust",
+    subtitle: "Heat-treated lightweight system for peak performance",
+    image:
+      "https://images.unsplash.com/photo-1601758124510-52d02ddb7cbd?w=400&q=80",
+  },
+  {
+    id: "eh2",
+    title: "Digital Cockpit",
+    subtitle: "Full-color TFT display with HUD connectivity",
+    image:
+      "https://images.unsplash.com/photo-1558980394-4c7304d9c052?w=400&q=80",
+  },
+];
 
 function StatBox({
   icon,
@@ -61,14 +82,62 @@ function StatBox({
 export default function BikeDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const bike = BIKES.find((b) => b.id === id) ?? BIKES[0];
+  const [bike, setBike] = useState<Bike | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [addingToCart, setAddingToCart] = useState(false);
 
-  const handleAddToCart = () => {
-    Alert.alert("Added to Cart!", `${bike.name} has been added to your cart.`, [
-      { text: "Continue Browsing", onPress: () => router.back() },
-      { text: "Go to Cart", onPress: () => router.push("/(tabs)/cart") },
-    ]);
+  useEffect(() => {
+    loadBike();
+  }, [id]);
+
+  const loadBike = async () => {
+    try {
+      const data = await fetchBikeById(id);
+      setBike(data);
+    } catch (err) {
+      Alert.alert("Error", "Could not load bike details.");
+      router.back();
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const handleAddToCart = async () => {
+    if (!bike) return;
+    setAddingToCart(true);
+    try {
+      await addToCart(bike.id, 1, `${bike.engine}`);
+      Alert.alert(
+        "Added to Cart!",
+        `${bike.name} has been added to your cart.`,
+        [
+          { text: "Continue Browsing", onPress: () => router.back() },
+          { text: "Go to Cart", onPress: () => router.push("/(tabs)/cart") },
+        ],
+      );
+    } catch (err: any) {
+      Alert.alert("Error", err.message || "Could not add to cart.");
+    } finally {
+      setAddingToCart(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: "#111008",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <ActivityIndicator size="large" color="#e87c00" />
+      </View>
+    );
+  }
+
+  if (!bike) return null;
 
   return (
     <View style={{ flex: 1, backgroundColor: "#111008" }}>
@@ -95,7 +164,6 @@ export default function BikeDetailScreen() {
               backgroundColor: "rgba(0,0,0,0.45)",
             }}
           />
-          {/* Top bar overlay */}
           <View
             style={{
               position: "absolute",
@@ -126,7 +194,6 @@ export default function BikeDetailScreen() {
 
         {/* ── Content ── */}
         <View style={{ padding: 20 }}>
-          {/* Series */}
           <Text
             style={{
               color: "#e87c00",
@@ -138,8 +205,6 @@ export default function BikeDetailScreen() {
           >
             {bike.series}
           </Text>
-
-          {/* Name */}
           <Text
             style={{
               color: "#fff",
@@ -151,8 +216,6 @@ export default function BikeDetailScreen() {
           >
             {bike.name.toUpperCase()}
           </Text>
-
-          {/* Price */}
           <Text style={{ color: "#9a7a5a", fontSize: 13, marginTop: 8 }}>
             MSRP Starting at
           </Text>
@@ -166,8 +229,6 @@ export default function BikeDetailScreen() {
           >
             {formatPrice(bike.price)}
           </Text>
-
-          {/* Description */}
           <Text
             style={{
               color: "#b0957a",
@@ -179,7 +240,7 @@ export default function BikeDetailScreen() {
             {bike.description}
           </Text>
 
-          {/* ── Stats Grid ── */}
+          {/* Stats */}
           <View style={{ flexDirection: "row", gap: 10, marginTop: 22 }}>
             <StatBox
               icon={
@@ -190,7 +251,7 @@ export default function BikeDetailScreen() {
                 />
               }
               label="TOP SPEED"
-              value={bike.topSpeed ?? "—"}
+              value={bike.top_speed ?? "—"}
             />
             <StatBox
               icon={<Ionicons name="flash" size={22} color="#e87c00" />}
@@ -219,7 +280,7 @@ export default function BikeDetailScreen() {
             />
           </View>
 
-          {/* ── Secure Your Build Card ── */}
+          {/* Secure Your Build */}
           <View
             style={{
               backgroundColor: "#1e1200",
@@ -241,15 +302,15 @@ export default function BikeDetailScreen() {
                 marginBottom: 16,
               }}
             >
-              Estimated delivery: 4-6 weeks
+              Estimated delivery: 4-6 weeks · {bike.stock} in stock
             </Text>
 
-            {/* Add to Cart */}
             <TouchableOpacity
               onPress={handleAddToCart}
+              disabled={addingToCart}
               activeOpacity={0.85}
               style={{
-                backgroundColor: "#e87c00",
+                backgroundColor: addingToCart ? "#a05500" : "#e87c00",
                 borderRadius: 12,
                 height: 50,
                 flexDirection: "row",
@@ -273,11 +334,10 @@ export default function BikeDetailScreen() {
                   letterSpacing: 1,
                 }}
               >
-                ADD TO CART
+                {addingToCart ? "ADDING..." : "ADD TO CART"}
               </Text>
             </TouchableOpacity>
 
-            {/* Back to Browse */}
             <TouchableOpacity
               onPress={() => router.back()}
               style={{
@@ -304,7 +364,6 @@ export default function BikeDetailScreen() {
               </Text>
             </TouchableOpacity>
 
-            {/* Share + Like row */}
             <View
               style={{
                 flexDirection: "row",
@@ -341,7 +400,7 @@ export default function BikeDetailScreen() {
             </View>
           </View>
 
-          {/* ── Engineering Highlights ── */}
+          {/* Engineering Highlights */}
           <Text
             style={{
               color: "#fff",
@@ -354,7 +413,6 @@ export default function BikeDetailScreen() {
           >
             ENGINEERING HIGHLIGHTS
           </Text>
-
           {ENGINEERING_HIGHLIGHTS.map((item) => (
             <View
               key={item.id}
@@ -390,7 +448,6 @@ export default function BikeDetailScreen() {
               </View>
             </View>
           ))}
-
           <View style={{ height: 20 }} />
         </View>
       </ScrollView>

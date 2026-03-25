@@ -1,4 +1,3 @@
-// app/(tabs)/profile.tsx
 import {
   View,
   Text,
@@ -13,10 +12,19 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import { useEffect, useState } from "react";
+import { useState, useCallback } from "react";
 import { useRouter } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons";
-import { fetchProfile, updateProfile, logout } from "../../services/api";
+import {
+  fetchProfile,
+  updateProfile,
+  logout,
+  fetchOrders,
+  fetchCart,
+  formatPrice,
+  type Order,
+} from "../../services/api";
 
 type UserProfile = {
   id: number;
@@ -32,14 +40,25 @@ type UserProfile = {
   address_country: string | null;
 };
 
+const STATUS_COLOR: Record<string, string> = {
+  confirmed: "#e87c00",
+  processing: "#f0a500",
+  shipped: "#4caf50",
+  delivered: "#4caf50",
+  cancelled: "#e84040",
+  pending: "#9a7a5a",
+};
+
 export default function ProfileScreen() {
   const router = useRouter();
   const [user, setUser] = useState<UserProfile | null>(null);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [cartCount, setCartCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // Edit form fields
+  // Edit fields
   const [fullName, setFullName] = useState("");
   const [city, setCity] = useState("");
   const [age, setAge] = useState("");
@@ -50,16 +69,27 @@ export default function ProfileScreen() {
   const [addressZip, setAddressZip] = useState("");
   const [addressCountry, setAddressCountry] = useState("");
 
-  useEffect(() => {
-    loadProfile();
-  }, []);
+  // ── Reload every time this tab is focused ─────────────────────
+  useFocusEffect(
+    useCallback(() => {
+      loadAll();
+    }, []),
+  );
 
-  const loadProfile = async () => {
+  const loadAll = async () => {
+    setLoading(true);
     try {
-      const data = await fetchProfile();
-      setUser(data);
+      const [profileData, ordersData, cartData] = await Promise.all([
+        fetchProfile(),
+        fetchOrders(),
+        fetchCart(),
+      ]);
+      setUser(profileData);
+      // Only keep the 3 most recent orders (already sorted DESC from backend)
+      setOrders(ordersData.slice(0, 3));
+      setCartCount(cartData.count);
     } catch (err: any) {
-      if (err.message?.includes("token") || err.message?.includes("401")) {
+      if (err.message?.includes("401") || err.message?.includes("token")) {
         router.replace("/login");
       } else {
         Alert.alert("Error", "Could not load profile.");
@@ -69,7 +99,6 @@ export default function ProfileScreen() {
     }
   };
 
-  // Pre-fill form with current user data when modal opens
   const openEditModal = () => {
     setFullName(user?.full_name || "");
     setCity(user?.city || "");
@@ -145,7 +174,7 @@ export default function ProfileScreen() {
     <View style={{ flex: 1, backgroundColor: "#111008" }}>
       <StatusBar barStyle="light-content" backgroundColor="#000000" />
 
-      {/* ── EDIT PROFILE MODAL ── */}
+      {/* ── EDIT MODAL ── */}
       <Modal
         visible={modalVisible}
         animationType="slide"
@@ -156,7 +185,6 @@ export default function ProfileScreen() {
           style={{ flex: 1, backgroundColor: "#1a0f00" }}
           behavior={Platform.OS === "ios" ? "padding" : "height"}
         >
-          {/* Modal Header */}
           <View
             style={{
               flexDirection: "row",
@@ -193,9 +221,7 @@ export default function ProfileScreen() {
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
-            {/* Section: Personal */}
             <Text style={sectionLabel}>Personal Info</Text>
-
             <View>
               <Text style={fieldLabel}>Full Name</Text>
               <TextInput
@@ -206,7 +232,6 @@ export default function ProfileScreen() {
                 style={inputStyle}
               />
             </View>
-
             <View style={{ flexDirection: "row", gap: 12 }}>
               <View style={{ flex: 1 }}>
                 <Text style={fieldLabel}>City</Text>
@@ -231,7 +256,6 @@ export default function ProfileScreen() {
                 />
               </View>
             </View>
-
             <View>
               <Text style={fieldLabel}>Profile Picture URL</Text>
               <TextInput
@@ -244,9 +268,7 @@ export default function ProfileScreen() {
               />
             </View>
 
-            {/* Section: Address */}
             <Text style={[sectionLabel, { marginTop: 8 }]}>Home Address</Text>
-
             <View>
               <Text style={fieldLabel}>Street / Area</Text>
               <TextInput
@@ -257,7 +279,6 @@ export default function ProfileScreen() {
                 style={inputStyle}
               />
             </View>
-
             <View style={{ flexDirection: "row", gap: 12 }}>
               <View style={{ flex: 1 }}>
                 <Text style={fieldLabel}>City</Text>
@@ -280,7 +301,6 @@ export default function ProfileScreen() {
                 />
               </View>
             </View>
-
             <View style={{ flexDirection: "row", gap: 12 }}>
               <View style={{ width: 110 }}>
                 <Text style={fieldLabel}>PIN Code</Text>
@@ -306,7 +326,6 @@ export default function ProfileScreen() {
               </View>
             </View>
 
-            {/* Save Button (also at bottom for convenience) */}
             <TouchableOpacity
               onPress={handleSave}
               disabled={saving}
@@ -318,10 +337,6 @@ export default function ProfileScreen() {
                 alignItems: "center",
                 justifyContent: "center",
                 marginTop: 12,
-                shadowColor: "#e87c00",
-                shadowOffset: { width: 0, height: 6 },
-                shadowOpacity: 0.45,
-                shadowRadius: 12,
                 elevation: 8,
               }}
             >
@@ -333,7 +348,7 @@ export default function ProfileScreen() {
         </KeyboardAvoidingView>
       </Modal>
 
-      {/* ── MAIN PROFILE SCREEN ── */}
+      {/* ── MAIN SCREEN ── */}
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 40 }}
@@ -433,11 +448,9 @@ export default function ProfileScreen() {
               )}
             </View>
           </View>
-
           <View
             style={{ height: 1, backgroundColor: "#3d2200", marginBottom: 14 }}
           />
-
           <View
             style={{
               flexDirection: "row",
@@ -451,7 +464,6 @@ export default function ProfileScreen() {
               {user?.email || "—"}
             </Text>
           </View>
-
           <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
             <Ionicons name="location-outline" size={17} color="#9a7a5a" />
             <Text style={{ color: "#ccc", fontSize: 14 }}>
@@ -518,12 +530,7 @@ export default function ProfileScreen() {
                     </Text>
                   ) : (
                     <Text
-                      style={{
-                        color: "#5a4030",
-                        fontSize: 13,
-                        marginTop: 4,
-                        width: 260,
-                      }}
+                      style={{ color: "#5a4030", fontSize: 13, marginTop: 4 }}
                     >
                       No address saved — tap Edit Profile to add one
                     </Text>
@@ -531,7 +538,6 @@ export default function ProfileScreen() {
                 </View>
               </View>
             </View>
-
             <View
               style={{
                 height: 130,
@@ -550,73 +556,203 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* My Orders */}
+        {/* My Orders — max 3 most recent */}
         <View style={{ paddingHorizontal: 20, marginTop: 28 }}>
-          <Text
+          <View
             style={{
-              color: "#fff",
-              fontSize: 18,
-              fontWeight: "800",
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
               marginBottom: 14,
             }}
           >
-            My Orders
-          </Text>
-          <View
-            style={{
-              backgroundColor: "#231200",
-              borderRadius: 16,
-              borderWidth: 1,
-              borderColor: "#3d2200",
-              padding: 32,
-              alignItems: "center",
-            }}
-          >
+            <Text style={{ color: "#fff", fontSize: 18, fontWeight: "800" }}>
+              My Orders
+            </Text>
+            {orders.length > 0 && (
+              <Text style={{ color: "#9a7a5a", fontSize: 12 }}>Recent 3</Text>
+            )}
+          </View>
+
+          {orders.length === 0 ? (
             <View
               style={{
-                width: 72,
-                height: 72,
-                borderRadius: 36,
-                backgroundColor: "#3d2200",
+                backgroundColor: "#231200",
+                borderRadius: 16,
+                borderWidth: 1,
+                borderColor: "#3d2200",
+                padding: 32,
                 alignItems: "center",
-                justifyContent: "center",
-                marginBottom: 16,
               }}
             >
-              <MaterialCommunityIcons
-                name="motorbike"
-                size={34}
-                color="#e87c00"
-              />
-            </View>
-            <Text
-              style={{
-                color: "#fff",
-                fontSize: 16,
-                fontWeight: "700",
-                marginBottom: 6,
-              }}
-            >
-              No orders yet
-            </Text>
-            <Text
-              style={{
-                color: "#9a7a5a",
-                fontSize: 13,
-                textAlign: "center",
-                lineHeight: 20,
-              }}
-            >
-              Your purchased bikes and gear{"\n"}will appear here.
-            </Text>
-            <TouchableOpacity style={{ marginTop: 14 }}>
-              <Text
-                style={{ color: "#e87c00", fontSize: 14, fontWeight: "700" }}
+              <View
+                style={{
+                  width: 72,
+                  height: 72,
+                  borderRadius: 36,
+                  backgroundColor: "#3d2200",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginBottom: 16,
+                }}
               >
-                Start Browsing
+                <MaterialCommunityIcons
+                  name="motorbike"
+                  size={34}
+                  color="#e87c00"
+                />
+              </View>
+              <Text
+                style={{
+                  color: "#fff",
+                  fontSize: 16,
+                  fontWeight: "700",
+                  marginBottom: 6,
+                }}
+              >
+                No orders yet
               </Text>
-            </TouchableOpacity>
-          </View>
+              <Text
+                style={{
+                  color: "#9a7a5a",
+                  fontSize: 13,
+                  textAlign: "center",
+                  lineHeight: 20,
+                }}
+              >
+                Your purchased bikes and gear{"\n"}will appear here.
+              </Text>
+              <TouchableOpacity
+                style={{ marginTop: 14 }}
+                onPress={() => router.push("/(tabs)/home")}
+              >
+                <Text
+                  style={{ color: "#e87c00", fontSize: 14, fontWeight: "700" }}
+                >
+                  Start Browsing
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={{ gap: 12 }}>
+              {orders.map((order) => (
+                <View
+                  key={order.id}
+                  style={{
+                    backgroundColor: "#231200",
+                    borderRadius: 14,
+                    borderWidth: 1,
+                    borderColor: "#3d2200",
+                    padding: 16,
+                  }}
+                >
+                  {/* Order header */}
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginBottom: 10,
+                    }}
+                  >
+                    <Text style={{ color: "#9a7a5a", fontSize: 12 }}>
+                      Order #{order.id}
+                    </Text>
+                    <View
+                      style={{
+                        backgroundColor:
+                          (STATUS_COLOR[order.status] || "#9a7a5a") + "22",
+                        borderRadius: 6,
+                        paddingHorizontal: 8,
+                        paddingVertical: 3,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          color: STATUS_COLOR[order.status] || "#9a7a5a",
+                          fontSize: 11,
+                          fontWeight: "700",
+                          textTransform: "uppercase",
+                        }}
+                      >
+                        {order.status}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Order items */}
+                  {order.items.map((item) => (
+                    <View
+                      key={item.id}
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 10,
+                        marginBottom: 6,
+                      }}
+                    >
+                      {item.bike_image ? (
+                        <Image
+                          source={{ uri: item.bike_image }}
+                          style={{
+                            width: 44,
+                            height: 36,
+                            borderRadius: 6,
+                            resizeMode: "cover",
+                          }}
+                        />
+                      ) : null}
+                      <View style={{ flex: 1 }}>
+                        <Text
+                          style={{
+                            color: "#fff",
+                            fontSize: 13,
+                            fontWeight: "600",
+                          }}
+                        >
+                          {item.bike_name}
+                        </Text>
+                        <Text style={{ color: "#9a7a5a", fontSize: 11 }}>
+                          Qty: {item.quantity} · {formatPrice(item.unit_price)}{" "}
+                          each
+                        </Text>
+                      </View>
+                    </View>
+                  ))}
+
+                  {/* Order footer */}
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginTop: 10,
+                      paddingTop: 10,
+                      borderTopWidth: 1,
+                      borderTopColor: "#3d2200",
+                    }}
+                  >
+                    <Text style={{ color: "#9a7a5a", fontSize: 12 }}>
+                      {new Date(order.placed_at).toLocaleDateString("en-IN", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </Text>
+                    <Text
+                      style={{
+                        color: "#e87c00",
+                        fontSize: 14,
+                        fontWeight: "700",
+                      }}
+                    >
+                      {formatPrice(order.total)}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          )}
         </View>
 
         {/* Go to Cart */}
@@ -632,10 +768,6 @@ export default function ProfileScreen() {
               alignItems: "center",
               justifyContent: "center",
               gap: 10,
-              shadowColor: "#e87c00",
-              shadowOffset: { width: 0, height: 6 },
-              shadowOpacity: 0.4,
-              shadowRadius: 12,
               elevation: 8,
             }}
           >
@@ -643,22 +775,25 @@ export default function ProfileScreen() {
             <Text style={{ color: "#fff", fontSize: 16, fontWeight: "800" }}>
               Go to Cart
             </Text>
-            <View
-              style={{
-                backgroundColor: "#fff",
-                borderRadius: 10,
-                width: 22,
-                height: 22,
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Text
-                style={{ color: "#e87c00", fontSize: 11, fontWeight: "800" }}
+            {cartCount > 0 && (
+              <View
+                style={{
+                  backgroundColor: "#fff",
+                  borderRadius: 10,
+                  minWidth: 22,
+                  height: 22,
+                  paddingHorizontal: 4,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
               >
-                2
-              </Text>
-            </View>
+                <Text
+                  style={{ color: "#e87c00", fontSize: 11, fontWeight: "800" }}
+                >
+                  {cartCount}
+                </Text>
+              </View>
+            )}
           </TouchableOpacity>
         </View>
 
@@ -697,14 +832,12 @@ const sectionLabel = {
   letterSpacing: 1.2,
   textTransform: "uppercase" as const,
 };
-
 const fieldLabel = {
   color: "#9a7a5a" as const,
   fontSize: 12,
   fontWeight: "600" as const,
   marginBottom: 6,
 };
-
 const inputStyle = {
   backgroundColor: "#2a1800",
   borderRadius: 12,

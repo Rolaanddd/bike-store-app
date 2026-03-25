@@ -2,20 +2,20 @@ import {
   View,
   Text,
   ScrollView,
-  TextInput,
   TouchableOpacity,
   Image,
   StatusBar,
+  ActivityIndicator,
   Dimensions,
 } from "react-native";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { BIKES, formatPrice, type Bike } from "./data/store";
+import { fetchBikes, formatPrice, type Bike } from "../../services/api";
 
 const { width } = Dimensions.get("window");
 
-// ─── Popular Bike Card ───────────────────────────────────────────
+// ─── Popular Bike Card ────────────────────────────────────────
 function PopularCard({ bike, onPress }: { bike: Bike; onPress: () => void }) {
   const [liked, setLiked] = useState(false);
   return (
@@ -83,7 +83,7 @@ function PopularCard({ bike, onPress }: { bike: Bike; onPress: () => void }) {
   );
 }
 
-// ─── Grid Card ───────────────────────────────────────────────────
+// ─── Grid Card ────────────────────────────────────────────────
 function GridCard({ bike, onPress }: { bike: Bike; onPress: () => void }) {
   return (
     <TouchableOpacity
@@ -139,7 +139,7 @@ function GridCard({ bike, onPress }: { bike: Bike; onPress: () => void }) {
   );
 }
 
-// ─── List Card ───────────────────────────────────────────────────
+// ─── List Card ────────────────────────────────────────────────
 function ListCard({ bike, onPress }: { bike: Bike; onPress: () => void }) {
   return (
     <TouchableOpacity
@@ -202,12 +202,32 @@ function ListCard({ bike, onPress }: { bike: Bike; onPress: () => void }) {
   );
 }
 
-// ─── Main Screen ─────────────────────────────────────────────────
+// ─── Main Screen ──────────────────────────────────────────────
 export default function HomeScreen() {
   const router = useRouter();
+  const [allBikes, setAllBikes] = useState<Bike[]>([]);
+  const [popularBikes, setPopularBikes] = useState<Bike[]>([]);
+  const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
-  const popularBikes = BIKES.filter((b) => b.popular);
+  useEffect(() => {
+    loadBikes();
+  }, []);
+
+  const loadBikes = async () => {
+    try {
+      const [all, popular] = await Promise.all([
+        fetchBikes(),
+        fetchBikes({ popular: true }),
+      ]);
+      setAllBikes(all);
+      setPopularBikes(popular);
+    } catch (err) {
+      console.error("Failed to load bikes:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const goToDetail = (bike: Bike) => {
     router.push({ pathname: "/(tabs)/bike/[id]", params: { id: bike.id } });
@@ -217,228 +237,224 @@ export default function HomeScreen() {
     <View style={{ flex: 1, backgroundColor: "#111008" }}>
       <StatusBar barStyle="light-content" backgroundColor="#111008" />
 
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* ── Hero Banner ── */}
+      {loading ? (
         <View
-          style={{
-            marginHorizontal: 20,
-            borderRadius: 18,
-            overflow: "hidden",
-            height: 200,
-            marginTop: 52,
-            marginBottom: 28,
-          }}
+          style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
         >
-          <Image
-            source={{
-              uri: "https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?w=800&q=80",
-            }}
-            style={{ width: "100%", height: "100%", resizeMode: "cover" }}
-          />
-          <View
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: "rgba(0,0,0,0.38)",
-            }}
-          />
-          <View
-            style={{
-              position: "absolute",
-              bottom: 0,
-              left: 0,
-              right: 0,
-              padding: 18,
-            }}
-          >
-            <Text
-              style={{
-                color: "#e87c00",
-                fontSize: 12,
-                fontWeight: "700",
-                letterSpacing: 1,
-              }}
-            >
-              NEW SEASON
-            </Text>
-            <Text
-              style={{
-                color: "#fff",
-                fontSize: 22,
-                fontWeight: "900",
-                lineHeight: 28,
-                marginTop: 4,
-              }}
-            >
-              Explore Top{"\n"}Motorcycles
-            </Text>
-            <TouchableOpacity
-              style={{
-                marginTop: 12,
-                backgroundColor: "#e87c00",
-                borderRadius: 50,
-                paddingHorizontal: 22,
-                paddingVertical: 9,
-                alignSelf: "flex-start",
-              }}
-              onPress={() => router.push("/(tabs)/all-bikes")}
-            >
-              <Text
-                style={{
-                  color: "#fff",
-                  fontSize: 12,
-                  fontWeight: "800",
-                  letterSpacing: 1,
-                }}
-              >
-                VIEW ALL
-              </Text>
-            </TouchableOpacity>
-          </View>
+          <ActivityIndicator size="large" color="#e87c00" />
         </View>
-
-        {/* ── Popular Bikes ── */}
-        <View style={{ paddingHorizontal: 20, marginBottom: 10 }}>
+      ) : (
+        <ScrollView showsVerticalScrollIndicator={false}>
+          {/* ── Hero Banner ── */}
           <View
             style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "flex-end",
-              marginBottom: 4,
+              marginHorizontal: 20,
+              borderRadius: 18,
+              overflow: "hidden",
+              height: 200,
+              marginTop: 52,
+              marginBottom: 28,
             }}
           >
-            <View>
-              <Text style={{ color: "#fff", fontSize: 19, fontWeight: "800" }}>
-                Popular Bikes
-              </Text>
-              <Text style={{ color: "#9a7a5a", fontSize: 13, marginTop: 2 }}>
-                Trending this week
-              </Text>
-            </View>
-            <TouchableOpacity onPress={() => router.push("/(tabs)/all-bikes")}>
+            <Image
+              source={{
+                uri: "https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?w=800&q=80",
+              }}
+              style={{ width: "100%", height: "100%", resizeMode: "cover" }}
+            />
+            <View
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: "rgba(0,0,0,0.38)",
+              }}
+            />
+            <View
+              style={{
+                position: "absolute",
+                bottom: 0,
+                left: 0,
+                right: 0,
+                padding: 18,
+              }}
+            >
               <Text
                 style={{
                   color: "#e87c00",
                   fontSize: 12,
                   fontWeight: "700",
-                  letterSpacing: 0.5,
+                  letterSpacing: 1,
                 }}
               >
-                SEE MORE
+                NEW SEASON
               </Text>
-            </TouchableOpacity>
+              <Text
+                style={{
+                  color: "#fff",
+                  fontSize: 22,
+                  fontWeight: "900",
+                  lineHeight: 28,
+                  marginTop: 4,
+                }}
+              >
+                Explore Top{"\n"}Motorcycles
+              </Text>
+              <TouchableOpacity
+                style={{
+                  marginTop: 12,
+                  backgroundColor: "#e87c00",
+                  borderRadius: 50,
+                  paddingHorizontal: 22,
+                  paddingVertical: 9,
+                  alignSelf: "flex-start",
+                }}
+                onPress={() => router.push("/(tabs)/all-bikes")}
+              >
+                <Text
+                  style={{
+                    color: "#fff",
+                    fontSize: 12,
+                    fontWeight: "800",
+                    letterSpacing: 1,
+                  }}
+                >
+                  VIEW ALL
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
 
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{
-            paddingHorizontal: 20,
-            paddingBottom: 4,
-            paddingTop: 10,
-          }}
-          style={{ marginBottom: 28 }}
-        >
-          {popularBikes.map((bike) => (
-            <PopularCard
-              key={bike.id}
-              bike={bike}
-              onPress={() => goToDetail(bike)}
-            />
-          ))}
-        </ScrollView>
-
-        {/* ── All Bikes ── */}
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "flex-end",
-            paddingHorizontal: 20,
-            marginBottom: 14,
-          }}
-        >
-          <View>
-            <Text style={{ color: "#fff", fontSize: 19, fontWeight: "800" }}>
-              All Bikes
-            </Text>
-            <Text style={{ color: "#9a7a5a", fontSize: 13, marginTop: 2 }}>
-              Browse our full inventory
-            </Text>
-          </View>
-          <View style={{ flexDirection: "row", gap: 8 }}>
-            <TouchableOpacity
-              onPress={() => setViewMode("grid")}
+          {/* ── Popular Bikes ── */}
+          <View style={{ paddingHorizontal: 20, marginBottom: 10 }}>
+            <View
               style={{
-                width: 34,
-                height: 34,
-                borderRadius: 8,
-                backgroundColor: viewMode === "grid" ? "#e87c00" : "#1e1200",
-                alignItems: "center",
-                justifyContent: "center",
-                borderWidth: 1,
-                borderColor: "#2e1a00",
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "flex-end",
+                marginBottom: 4,
               }}
             >
-              <Ionicons
-                name="grid-outline"
-                size={16}
-                color={viewMode === "grid" ? "#fff" : "#9a7a5a"}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => setViewMode("list")}
-              style={{
-                width: 34,
-                height: 34,
-                borderRadius: 8,
-                backgroundColor: viewMode === "list" ? "#e87c00" : "#1e1200",
-                alignItems: "center",
-                justifyContent: "center",
-                borderWidth: 1,
-                borderColor: "#2e1a00",
-              }}
-            >
-              <Ionicons
-                name="list-outline"
-                size={16}
-                color={viewMode === "list" ? "#fff" : "#9a7a5a"}
-              />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {viewMode === "grid" ? (
-          <View
-            style={{
-              flexDirection: "row",
-              flexWrap: "wrap",
-              paddingHorizontal: 15,
-              paddingBottom: 30,
-            }}
-          >
-            {BIKES.map((bike) => (
-              <View key={bike.id} style={{ width: "50%" }}>
-                <GridCard bike={bike} onPress={() => goToDetail(bike)} />
+              <View>
+                <Text
+                  style={{ color: "#fff", fontSize: 19, fontWeight: "800" }}
+                >
+                  Popular Bikes
+                </Text>
+                <Text style={{ color: "#9a7a5a", fontSize: 13, marginTop: 2 }}>
+                  Trending this week
+                </Text>
               </View>
-            ))}
+              <TouchableOpacity
+                onPress={() => router.push("/(tabs)/all-bikes")}
+              >
+                <Text
+                  style={{
+                    color: "#e87c00",
+                    fontSize: 12,
+                    fontWeight: "700",
+                    letterSpacing: 0.5,
+                  }}
+                >
+                  SEE MORE
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        ) : (
-          <View style={{ paddingBottom: 30 }}>
-            {BIKES.map((bike) => (
-              <ListCard
+
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{
+              paddingHorizontal: 20,
+              paddingBottom: 4,
+              paddingTop: 10,
+            }}
+            style={{ marginBottom: 28 }}
+          >
+            {popularBikes.map((bike) => (
+              <PopularCard
                 key={bike.id}
                 bike={bike}
                 onPress={() => goToDetail(bike)}
               />
             ))}
+          </ScrollView>
+
+          {/* ── All Bikes ── */}
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "flex-end",
+              paddingHorizontal: 20,
+              marginBottom: 14,
+            }}
+          >
+            <View>
+              <Text style={{ color: "#fff", fontSize: 19, fontWeight: "800" }}>
+                All Bikes
+              </Text>
+              <Text style={{ color: "#9a7a5a", fontSize: 13, marginTop: 2 }}>
+                Browse our full inventory
+              </Text>
+            </View>
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              {(["grid", "list"] as const).map((mode) => (
+                <TouchableOpacity
+                  key={mode}
+                  onPress={() => setViewMode(mode)}
+                  style={{
+                    width: 34,
+                    height: 34,
+                    borderRadius: 8,
+                    backgroundColor: viewMode === mode ? "#e87c00" : "#1e1200",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderWidth: 1,
+                    borderColor: "#2e1a00",
+                  }}
+                >
+                  <Ionicons
+                    name={mode === "grid" ? "grid-outline" : "list-outline"}
+                    size={16}
+                    color={viewMode === mode ? "#fff" : "#9a7a5a"}
+                  />
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
-        )}
-      </ScrollView>
+
+          {viewMode === "grid" ? (
+            <View
+              style={{
+                flexDirection: "row",
+                flexWrap: "wrap",
+                paddingHorizontal: 15,
+                paddingBottom: 30,
+              }}
+            >
+              {allBikes.map((bike) => (
+                <View key={bike.id} style={{ width: "50%" }}>
+                  <GridCard bike={bike} onPress={() => goToDetail(bike)} />
+                </View>
+              ))}
+            </View>
+          ) : (
+            <View style={{ paddingBottom: 30 }}>
+              {allBikes.map((bike) => (
+                <ListCard
+                  key={bike.id}
+                  bike={bike}
+                  onPress={() => goToDetail(bike)}
+                />
+              ))}
+            </View>
+          )}
+        </ScrollView>
+      )}
     </View>
   );
 }
