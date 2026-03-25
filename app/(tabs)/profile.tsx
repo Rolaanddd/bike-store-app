@@ -154,7 +154,7 @@ export default function ProfileScreen() {
       <View
         style={{
           flex: 1,
-          backgroundColor: "#1a0f00",
+          backgroundColor: "#111008",
           alignItems: "center",
           justifyContent: "center",
         }}
@@ -182,7 +182,7 @@ export default function ProfileScreen() {
         onRequestClose={() => setModalVisible(false)}
       >
         <KeyboardAvoidingView
-          style={{ flex: 1, backgroundColor: "#1a0f00" }}
+          style={{ flex: 1, backgroundColor: "#111008" }}
           behavior={Platform.OS === "ios" ? "padding" : "height"}
         >
           <View
@@ -389,7 +389,7 @@ export default function ProfileScreen() {
         <View
           style={{
             marginHorizontal: 20,
-            backgroundColor: "#231200",
+            backgroundColor: "#1e1200",
             borderRadius: 16,
             padding: 16,
             borderWidth: 1,
@@ -409,7 +409,7 @@ export default function ProfileScreen() {
                 source={{
                   uri:
                     user?.avatar_url ||
-                    `https://i.pravatar.cc/80?u=${user?.email}`,
+                    `https://i.pinimg.com/1200x/42/87/4e/42874e869dc22519a31e5578238d5756.jpg`,
                 }}
                 style={{
                   width: 64,
@@ -487,7 +487,7 @@ export default function ProfileScreen() {
           </Text>
           <View
             style={{
-              backgroundColor: "#231200",
+              backgroundColor: "#1e1200",
               borderRadius: 16,
               borderWidth: 1,
               borderColor: "#3d2200",
@@ -541,7 +541,7 @@ export default function ProfileScreen() {
             <View
               style={{
                 height: 130,
-                backgroundColor: "#2a1800",
+                backgroundColor: "#241500",
                 alignItems: "center",
                 justifyContent: "center",
                 gap: 8,
@@ -569,9 +569,6 @@ export default function ProfileScreen() {
             <Text style={{ color: "#fff", fontSize: 18, fontWeight: "800" }}>
               My Orders
             </Text>
-            {orders.length > 0 && (
-              <Text style={{ color: "#9a7a5a", fontSize: 12 }}>Recent 3</Text>
-            )}
           </View>
 
           {orders.length === 0 ? (
@@ -639,7 +636,7 @@ export default function ProfileScreen() {
                 <View
                   key={order.id}
                   style={{
-                    backgroundColor: "#231200",
+                    backgroundColor: "#1e1200",
                     borderRadius: 14,
                     borderWidth: 1,
                     borderColor: "#3d2200",
@@ -803,7 +800,7 @@ export default function ProfileScreen() {
             onPress={handleLogout}
             activeOpacity={0.75}
             style={{
-              backgroundColor: "#231200",
+              backgroundColor: "#1e1200",
               borderRadius: 14,
               height: 54,
               flexDirection: "row",

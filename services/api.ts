@@ -222,4 +222,4 @@ export async function cancelOrder(id: number) {
 }
 
 export const formatPrice = (price: number) =>
-  "$" + Number(price).toLocaleString("en-US");
+  "₹" + Number(price).toLocaleString("en-US");

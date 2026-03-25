@@ -43,6 +43,7 @@ export default function TabsLayout() {
           borderTopWidth: 1,
           height: 70,
           paddingBottom: 0,
+          paddingTop: 9,
         },
         tabBarShowLabel: false,
       }}
