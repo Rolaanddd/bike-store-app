@@ -41,8 +41,8 @@ export default function LoginScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#1a0f00" }}>
-      <StatusBar barStyle="light-content" backgroundColor="#1a0f00" />
+    <View style={{ flex: 1, backgroundColor: "#111008" }}>
+      <StatusBar barStyle="light-content" backgroundColor="#111008" />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -107,28 +107,6 @@ export default function LoginScreen() {
               }}
               style={{ width: "100%", height: "100%", resizeMode: "cover" }}
             />
-            <View
-              style={{
-                position: "absolute",
-                bottom: 14,
-                left: 14,
-                backgroundColor: "#e87c00",
-                borderRadius: 6,
-                paddingHorizontal: 10,
-                paddingVertical: 4,
-              }}
-            >
-              <Text
-                style={{
-                  color: "#fff",
-                  fontSize: 11,
-                  fontWeight: "700",
-                  letterSpacing: 1,
-                }}
-              >
-                PREMIUM
-              </Text>
-            </View>
           </View>
 
           {/* ── Welcome Text ── */}
@@ -185,18 +163,6 @@ export default function LoginScreen() {
                 }}
               >
                 <Text style={labelStyle}>Password</Text>
-                <TouchableOpacity>
-                  <Text
-                    style={{
-                      color: "#e87c00",
-                      fontSize: 12,
-                      fontWeight: "700",
-                      letterSpacing: 0.5,
-                    }}
-                  >
-                    FORGOT PASSWORD?
-                  </Text>
-                </TouchableOpacity>
               </View>
               <View style={inputContainer}>
                 <Ionicons

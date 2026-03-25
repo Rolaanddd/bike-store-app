@@ -69,8 +69,8 @@ export default function RegisterScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#1a0f00" }}>
-      <StatusBar barStyle="light-content" backgroundColor="#1a0f00" />
+    <View style={{ flex: 1, backgroundColor: "#111008" }}>
+      <StatusBar barStyle="light-content" backgroundColor="#111008" />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -119,12 +119,17 @@ export default function RegisterScreen() {
             {/* Full Name */}
             <View>
               <Text style={labelStyle}>Full Name</Text>
-              <View style={[inputContainer, { marginTop: 8 }]}>
+              <View
+                style={[
+                  inputContainer,
+                  { marginTop: 8, backgroundColor: "#241500" },
+                ]}
+              >
                 <User size={18} color="#9a7a5a" style={{ marginRight: 10 }} />
                 <TextInput
                   value={fullName}
                   onChangeText={setFullName}
-                  placeholder="John Doe"
+                  placeholder="Your Full Name"
                   placeholderTextColor="#5a4030"
                   style={inputStyle}
                 />
@@ -134,12 +139,17 @@ export default function RegisterScreen() {
             {/* Email */}
             <View>
               <Text style={labelStyle}>Email Address</Text>
-              <View style={[inputContainer, { marginTop: 8 }]}>
+              <View
+                style={[
+                  inputContainer,
+                  { marginTop: 8, backgroundColor: "#241500" },
+                ]}
+              >
                 <Mail size={18} color="#9a7a5a" style={{ marginRight: 10 }} />
                 <TextInput
                   value={email}
                   onChangeText={setEmail}
-                  placeholder="john@example.com"
+                  placeholder="your@example.com"
                   placeholderTextColor="#5a4030"
                   keyboardType="email-address"
                   autoCapitalize="none"
@@ -152,7 +162,12 @@ export default function RegisterScreen() {
             <View style={{ flexDirection: "row", gap: 12 }}>
               <View style={{ flex: 1 }}>
                 <Text style={labelStyle}>City</Text>
-                <View style={[inputContainer, { marginTop: 8 }]}>
+                <View
+                  style={[
+                    inputContainer,
+                    { marginTop: 8, backgroundColor: "#241500" },
+                  ]}
+                >
                   <MapPin
                     size={18}
                     color="#9a7a5a"
@@ -161,7 +176,7 @@ export default function RegisterScreen() {
                   <TextInput
                     value={city}
                     onChangeText={setCity}
-                    placeholder="Los Angeles"
+                    placeholder="Your city"
                     placeholderTextColor="#5a4030"
                     style={inputStyle}
                   />
@@ -175,6 +190,7 @@ export default function RegisterScreen() {
                     {
                       marginTop: 8,
                       justifyContent: "center",
+                      backgroundColor: "#241500",
                       paddingHorizontal: 12,
                     },
                   ]}
@@ -195,7 +211,12 @@ export default function RegisterScreen() {
             {/* Password */}
             <View>
               <Text style={labelStyle}>Password</Text>
-              <View style={[inputContainer, { marginTop: 8 }]}>
+              <View
+                style={[
+                  inputContainer,
+                  { marginTop: 8, backgroundColor: "#241500" },
+                ]}
+              >
                 <Lock size={18} color="#9a7a5a" style={{ marginRight: 10 }} />
                 <TextInput
                   value={password}
